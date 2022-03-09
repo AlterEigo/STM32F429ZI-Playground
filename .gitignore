@@ -1,6 +1,7 @@
 *
 
 !*.toml
+!memory.x
 
 !src/
 !src/**.rs
