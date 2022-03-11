@@ -24,11 +24,11 @@ SECTIONS
     {
         // First entry: the vectored interrupt table
         // initial stack pointer value
-        LONG(ORIGIN(RAM) + LENGTH(RAM));
+        LONG(ORIGIN(RAM) + LENGTH(RAM));    // 0x0000 0000
 
         // Second entry: reset vector
         // KEEP forces the linker to insert the reset_vector section here
-        KEEP(*(.vector_table.reset_vector));
+        KEEP(*(.vector_table.reset_vector)); // 0x0000 0004
     } > FLASH
 
     .text :
@@ -41,12 +41,19 @@ SECTIONS
     } > FLASH
 
     .bss : {
+        _sbss = .;
         *(.bss .bss.*);
+        _ebss = .;
     } > RAM
 
-    .data : {
+    .data : AT(ADDR(.rodata) + SIZEOF(.rodata))
+    {
+        _sdata = .;
         *(.data .data.*);
+        _edata = .;
     } > RAM
+
+    _sidata = LOADADDR(.data);
 
     /DISCARD/ :
     {
@@ -54,4 +61,4 @@ SECTIONS
     }
 }
 
-_stack_start = ORIGIN(RAM) + LENGTH(RAM);
+//_stack_start = ORIGIN(RAM) + LENGTH(RAM);
