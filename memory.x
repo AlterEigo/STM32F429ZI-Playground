@@ -17,6 +17,7 @@ ENTRY(Reset);
     keep it in the source code.
 */
 EXTERN(RESET_VECTOR);
+EXTERN(EXCEPTIONS);
 
 SECTIONS
 {
@@ -29,6 +30,8 @@ SECTIONS
         // Second entry: reset vector
         // KEEP forces the linker to insert the reset_vector section here
         KEEP(*(.vector_table.reset_vector)); // 0x0000 0004
+
+        KEEP(*(.vector_table.exceptions));
     } > FLASH
 
     .text :
@@ -61,4 +64,11 @@ SECTIONS
     }
 }
 
-//_stack_start = ORIGIN(RAM) + LENGTH(RAM);
+PROVIDE(NMI = DefaultExceptionHandler);
+PROVIDE(HardFault = DefaultExceptionHandler);
+PROVIDE(MemManage = DefaultExceptionHandler);
+PROVIDE(BusFault = DefaultExceptionHandler);
+PROVIDE(UsageFault = DefaultExceptionHandler);
+PROVIDE(SVCall = DefaultExceptionHandler);
+PROVIDE(PendSV = DefaultExceptionHandler);
+PROVIDE(SysTick = DefaultExceptionHandler);
