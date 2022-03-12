@@ -1,6 +1,8 @@
 #![no_main]
 #![no_std]
 
+mod init;
+
 use core::panic::PanicInfo;
 use core::ptr;
 
