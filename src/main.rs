@@ -1,9 +1,7 @@
 #![no_main]
 #![no_std]
 
-//extern crate cortex_m;
-extern crate panic_itm;
-
+use core::panic::PanicInfo;
 use core::ptr;
 
 static RODATA: &[u8] = b"Hello world";
@@ -74,6 +72,11 @@ fn entrypoint() -> ! {
     let _y = unsafe { &BSS };
     let _z = unsafe { &DATA };
 
+    loop {}
+}
+
+#[panic_handler]
+fn panic(_panic: &PanicInfo<'_>) -> ! {
     loop {}
 }
 
