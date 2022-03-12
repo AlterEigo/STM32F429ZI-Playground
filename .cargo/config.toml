@@ -1,8 +1,32 @@
 [target.thumbv7em-none-eabihf]
 runner = "arm-none-eabi-gdb -q"
 rustflags = [
-    "-C", "link-arg=-Tmemory.x"
+    "-C", "link-arg=-Tmemory.x",
 ]
+
+[profile.dev]
+opt-level = 0
+debug = true
+split-debuginfo = '...'  # Platform-specific.
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 256
+rpath = false
+
+[profile.release]
+opt-level = 3               # default: 3
+debug = false
+split-debuginfo = '...'     # Platform-specific.
+debug-assertions = false
+overflow-checks = false
+lto = false
+panic = 'abort'             # default: unwind
+incremental = false
+codegen-units = 16
+rpath = false
 
 [build]
 target = "thumbv7em-none-eabihf"
