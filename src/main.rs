@@ -2,6 +2,7 @@
 #![no_std]
 
 extern crate stm32f429_rt;
+extern crate cortex_m;
 mod init;
 
 use stm32f429_rt::Peripherals;
@@ -12,46 +13,6 @@ use core::ptr;
 static RODATA: &[u8] = b"Hello world";
 static mut BSS: u8 = 7;
 static mut DATA: u16 = 9;
-
-pub union Vector {
-    reserved: u32,
-    handler: unsafe extern "C" fn(),
-}
-
-extern "C" {
-    fn NMI();
-    fn HardFault();
-    fn MemManage();
-    fn BusFault();
-    fn UsageFault();
-    fn SVCall();
-    fn PendSV();
-    fn SysTick();
-}
-
-#[link_section = ".vector_table.exceptions"]
-#[no_mangle]
-pub static EXCEPTIONS: [Vector; 14] = [
-    Vector { handler: NMI },
-    Vector { handler: HardFault },
-    Vector { handler: MemManage },
-    Vector { handler: BusFault },
-    Vector { handler: UsageFault, },
-    Vector { reserved: 0 },
-    Vector { reserved: 0 },
-    Vector { reserved: 0 },
-    Vector { reserved: 0 },
-    Vector { handler: SVCall },
-    Vector { reserved: 0 },
-    Vector { reserved: 0 },
-    Vector { handler: PendSV },
-    Vector { handler: SysTick },
-];
-
-#[no_mangle]
-pub extern "C" fn DefaultExceptionHandler() {
-    loop {}
-}
 
 #[no_mangle]
 pub unsafe extern "C" fn Reset() -> ! {
@@ -75,16 +36,39 @@ pub unsafe extern "C" fn Reset() -> ! {
     entrypoint()
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn SysTick() {
+    static mut COUNT: u32 = 0;
+
+    if COUNT == 1000 {
+        let peripherals = Peripherals::take().unwrap();
+        COUNT = 0;
+        // Setting value of TRUE for PG13
+        peripherals.GPIOG.odr.modify(|r, w| w.odr13().bit(!r.odr13().bit()));
+    } else {
+        COUNT += 1;
+    }
+}
+
 fn entrypoint() -> ! {
-    let mut peripherals = Peripherals::take().unwrap();
+    let peripherals = Peripherals::take().unwrap();
+    let cperipherals = stm32f429_rt::CorePeripherals::take().unwrap();
 
-    peripherals.RCC.ahb1enr.modify(|_, w| unsafe { w.gpiogen().set_bit() });
+    // Activating the GPIOG
+    peripherals.RCC.ahb1enr.modify(|_, w| w.gpiogen().set_bit());
 
-    peripherals.GPIOG.moder.modify(|_, w| unsafe {
-        w.moder13().bits(0x1)
-    });
+    // Setting output mode for the PG13 pin
+    peripherals.GPIOG.moder.modify(|_, w| unsafe { w.moder13().bits(0x01) });
 
-    peripherals.GPIOG.odr.write(|w| w.odr13().set_bit() );
+    // Setting up AHB prescaler to 1/512
+    //peripherals.RCC.cfgr.modify(|_, w| unsafe {
+    //    w.hpre().bits(0b1111)
+    //});
+    
+    cortex_m::peripheral::scb::Exception::SysTick;
+
+    drop(peripherals);
+
     loop {}
 }
 
@@ -96,3 +80,7 @@ fn panic(_panic: &PanicInfo<'_>) -> ! {
 #[link_section = ".vector_table.reset_vector"]
 #[no_mangle]
 pub static RESET_VECTOR: unsafe extern "C" fn() -> ! = Reset;
+
+#[link_section = ".vector_table.systick_vector"]
+#[no_mangle]
+pub static SYSTICK_VECTOR: unsafe extern "C" fn() = SysTick;

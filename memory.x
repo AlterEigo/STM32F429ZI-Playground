@@ -17,12 +17,13 @@ ENTRY(Reset);
     keep it in the source code.
 */
 EXTERN(RESET_VECTOR);
-EXTERN(EXCEPTIONS);
+EXTERN(SYSTICK_VECTOR);
 
 SECTIONS
 {
     .vector_table ORIGIN(FLASH) :
     {
+        _vt_start = .;
         // First entry: the vectored interrupt table
         // initial stack pointer value
         LONG(ORIGIN(RAM) + LENGTH(RAM));    // 0x0000 0000
@@ -31,7 +32,8 @@ SECTIONS
         // KEEP forces the linker to insert the reset_vector section here
         KEEP(*(.vector_table.reset_vector)); // 0x0000 0004
 
-        KEEP(*(.vector_table.exceptions));
+        . = ABSOLUTE(0x0800003c);
+        KEEP(*(.vector_table.systick_vector));
     } > FLASH
 
     .text :
@@ -63,12 +65,3 @@ SECTIONS
         *(.ARM.exidx .ARM.exidx.*);
     }
 }
-
-PROVIDE(NMI = DefaultExceptionHandler);
-PROVIDE(HardFault = DefaultExceptionHandler);
-PROVIDE(MemManage = DefaultExceptionHandler);
-PROVIDE(BusFault = DefaultExceptionHandler);
-PROVIDE(UsageFault = DefaultExceptionHandler);
-PROVIDE(SVCall = DefaultExceptionHandler);
-PROVIDE(PendSV = DefaultExceptionHandler);
-PROVIDE(SysTick = DefaultExceptionHandler);
