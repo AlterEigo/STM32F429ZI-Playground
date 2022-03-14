@@ -1,7 +1,10 @@
 #![no_main]
 #![no_std]
 
+extern crate stm32f429_rt;
 mod init;
+
+use stm32f429_rt::Peripherals;
 
 use core::panic::PanicInfo;
 use core::ptr;
@@ -66,14 +69,22 @@ pub unsafe extern "C" fn Reset() -> ! {
     let datalen = &_edata as *const u8 as usize - &_sdata as *const u8 as usize;
     ptr::copy_nonoverlapping(&_sidata as *const u8, &mut _sdata as *mut u8, datalen);
 
+    // Init
+    // HAL_SYSTICK_Config(16000000 / (1000u32 / 1u32))
+
     entrypoint()
 }
 
 fn entrypoint() -> ! {
-    let _x = RODATA;
-    let _y = unsafe { &BSS };
-    let _z = unsafe { &DATA };
+    let mut peripherals = Peripherals::take().unwrap();
 
+    peripherals.RCC.ahb1enr.modify(|_, w| unsafe { w.gpiogen().set_bit() });
+
+    peripherals.GPIOG.moder.modify(|_, w| unsafe {
+        w.moder13().bits(0x1)
+    });
+
+    peripherals.GPIOG.odr.write(|w| w.odr13().set_bit() );
     loop {}
 }
 

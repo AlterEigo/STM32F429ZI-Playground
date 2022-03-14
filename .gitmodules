@@ -1,0 +1,3 @@
+[submodule "STM32F429-rt-lib"]
+	path = STM32F429-rt-lib
+	url = git@github.com:AlterEigo/STM32F429-rt-lib.git

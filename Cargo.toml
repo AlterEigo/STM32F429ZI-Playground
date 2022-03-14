@@ -16,3 +16,7 @@ panic = "abort"
 #cortex-m-rt = ">=0.7.1"
 #panic-itm = ">=0.4.2"
 #stm32f4 = ">=0.14.0"
+
+[dependencies.stm32f429-rt]
+version = ">=0.1.0"
+path = "./STM32F429-rt-lib"
