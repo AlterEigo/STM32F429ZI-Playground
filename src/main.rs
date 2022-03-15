@@ -5,6 +5,7 @@ extern crate stm32f429_rt;
 extern crate cortex_m;
 mod init;
 
+use cortex_m::peripheral::syst::SystClkSource;
 use stm32f429_rt::{
     CorePeripherals,
     Peripherals
@@ -55,6 +56,8 @@ fn configure_clock(syst: &mut stm32f429_rt::SYST, freq: u32) {
     if (freq & OVMASK) != 0x0 {
         panic!("SYST reload value overflow (24-bit limitation)");
     }
+
+    syst.set_clock_source(SystClkSource::Core);
     
     // Setting our own reload value
     // Push reload value into [0,23] bits of SYST_RVR register
@@ -83,7 +86,8 @@ fn entrypoint() -> ! {
 
     peripherals.GPIOG.odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
 
-    configure_clock(&mut cperipherals.SYST, 100000 - 1);
+    let count: u32 = 16_000_000;
+    configure_clock(&mut cperipherals.SYST, count);
 
     loop {}
 }
