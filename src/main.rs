@@ -42,11 +42,17 @@ pub unsafe extern "C" fn Reset() -> ! {
 
 #[no_mangle]
 pub unsafe extern "C" fn SysTick() {
+    static mut count: u32 = 0;
     // Toggling value of PG13
-    (*stm32f429_rt::GPIOG::ptr())
-        .odr.modify(|r, w| w.odr13().bit(!r.odr13().bit()));
-    (*stm32f429_rt::GPIOG::ptr())
-        .odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
+    
+    if count == 500 {
+        count = 0;
+        (*stm32f429_rt::GPIOG::ptr())
+            .odr.modify(|r, w| w.odr13().bit(!r.odr13().bit()));
+        (*stm32f429_rt::GPIOG::ptr())
+            .odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
+    }
+    count += 1;
 }
 
 fn configure_clock(syst: &mut stm32f429_rt::SYST, freq: u32) {
@@ -86,7 +92,7 @@ fn entrypoint() -> ! {
 
     peripherals.GPIOG.odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
 
-    let count: u32 = 16_000_000;
+    let count: u32 = (16_000_000 / 1_000) - 1;
     configure_clock(&mut cperipherals.SYST, count);
 
     loop {}
