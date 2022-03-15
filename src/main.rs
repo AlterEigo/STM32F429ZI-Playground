@@ -5,7 +5,10 @@ extern crate stm32f429_rt;
 extern crate cortex_m;
 mod init;
 
-use stm32f429_rt::Peripherals;
+use stm32f429_rt::{
+    CorePeripherals,
+    Peripherals
+};
 
 use core::panic::PanicInfo;
 use core::ptr;
@@ -38,36 +41,49 @@ pub unsafe extern "C" fn Reset() -> ! {
 
 #[no_mangle]
 pub unsafe extern "C" fn SysTick() {
-    static mut COUNT: u32 = 0;
+    // Toggling value of PG13
+    (*stm32f429_rt::GPIOG::ptr())
+        .odr.modify(|r, w| w.odr13().bit(!r.odr13().bit()));
+    (*stm32f429_rt::GPIOG::ptr())
+        .odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
+}
 
-    if COUNT == 1000 {
-        let peripherals = Peripherals::take().unwrap();
-        COUNT = 0;
-        // Setting value of TRUE for PG13
-        peripherals.GPIOG.odr.modify(|r, w| w.odr13().bit(!r.odr13().bit()));
-    } else {
-        COUNT += 1;
+fn configure_clock(syst: &mut stm32f429_rt::SYST, freq: u32) {
+
+    const OVMASK: u32 = 0x1100_0000;
+
+    if (freq & OVMASK) != 0x0 {
+        panic!("SYST reload value overflow (24-bit limitation)");
     }
+    
+    // Setting our own reload value
+    // Push reload value into [0,23] bits of SYST_RVR register
+    syst.set_reload(freq);
+
+    // Clearing any garbage value
+    // Reset value of [0,23] bits of SYST_CVR register
+    // (any value resets the value to 0)
+    syst.clear_current();
+
+    syst.enable_interrupt();
+
+    syst.enable_counter();
 }
 
 fn entrypoint() -> ! {
-    let peripherals = Peripherals::take().unwrap();
-    let cperipherals = stm32f429_rt::CorePeripherals::take().unwrap();
+    let mut peripherals = Peripherals::take().unwrap();
+    let mut cperipherals = stm32f429_rt::CorePeripherals::take().unwrap();
 
     // Activating the GPIOG
     peripherals.RCC.ahb1enr.modify(|_, w| w.gpiogen().set_bit());
 
     // Setting output mode for the PG13 pin
     peripherals.GPIOG.moder.modify(|_, w| unsafe { w.moder13().bits(0x01) });
+    peripherals.GPIOG.moder.modify(|_, w| unsafe { w.moder14().bits(0x01) });
 
-    // Setting up AHB prescaler to 1/512
-    //peripherals.RCC.cfgr.modify(|_, w| unsafe {
-    //    w.hpre().bits(0b1111)
-    //});
-    
-    cortex_m::peripheral::scb::Exception::SysTick;
+    peripherals.GPIOG.odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
 
-    drop(peripherals);
+    configure_clock(&mut cperipherals.SYST, 100000 - 1);
 
     loop {}
 }
