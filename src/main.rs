@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #![no_main]
 #![no_std]
 
