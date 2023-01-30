@@ -18,7 +18,7 @@ static mut BSS: u8 = 7;
 static mut DATA: u16 = 9;
 
 #[no_mangle]
-pub unsafe extern "C" fn Reset() -> ! {
+pub unsafe extern "C" fn reset() -> ! {
     extern "C" {
         static mut _sbss: u8;
         static mut _ebss: u8;
@@ -40,7 +40,7 @@ pub unsafe extern "C" fn Reset() -> ! {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn SysTick() {
+pub unsafe extern "C" fn sys_tick() {
     static mut count: u32 = 0;
     // Toggling value of PG13
     
@@ -104,8 +104,8 @@ fn panic(_panic: &PanicInfo<'_>) -> ! {
 
 #[link_section = ".vector_table.reset_vector"]
 #[no_mangle]
-pub static RESET_VECTOR: unsafe extern "C" fn() -> ! = Reset;
+pub static RESET_VECTOR: unsafe extern "C" fn() -> ! = reset;
 
 #[link_section = ".vector_table.systick_vector"]
 #[no_mangle]
-pub static SYSTICK_VECTOR: unsafe extern "C" fn() = SysTick;
+pub static SYSTICK_VECTOR: unsafe extern "C" fn() = sys_tick;
