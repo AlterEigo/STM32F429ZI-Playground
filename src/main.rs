@@ -1,8 +1,6 @@
 #![no_main]
 #![no_std]
 
-extern crate stm32f429_rt;
-extern crate cortex_m;
 mod init;
 
 use cortex_m::peripheral::syst::SystClkSource;
