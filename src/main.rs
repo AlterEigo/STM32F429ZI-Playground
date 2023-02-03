@@ -7,7 +7,7 @@ mod init;
 use cortex_m::peripheral::syst::SystClkSource;
 use stm32f429_rt::{
     CorePeripherals,
-    Peripherals, GPIOC, GPIOF,
+    Peripherals, GPIOC, GPIOF, GPIOD,
 };
 
 use core::panic::PanicInfo;
@@ -82,6 +82,24 @@ fn configure_gpioc(gpioc: &mut GPIOC) {
     });
 }
 
+fn configure_gpiod(gpiod: &mut GPIOD) {
+    // Output modes: gp output
+    gpiod.moder.write(|w| unsafe {
+        w.moder12().bits(0b01);
+        w.moder13().bits(0b01)
+    });
+    // Output type: push-pull
+    gpiod.otyper.write(|w| {
+        w.ot12().clear_bit();
+        w.ot13().clear_bit()
+    });
+    // Speed: maximum
+    gpiod.ospeedr.write(|w| unsafe {
+        w.ospeedr12().bits(0b11);
+        w.ospeedr12().bits(0b11)
+    });
+}
+
 fn configure_gpiof(gpiof: &mut GPIOF) {
     // Setting alternate function 5 for pins 7,8 and 9 of port GPIOF
     gpiof.afrl.write(|w| unsafe {
@@ -133,6 +151,7 @@ fn entrypoint() -> ! {
     });
 
     configure_gpioc(&mut peripherals.GPIOC);
+    configure_gpiod(&mut peripherals.GPIOD);
     configure_gpiof(&mut peripherals.GPIOF);
 
     // Setting output mode for the PG13 pin
