@@ -7,7 +7,7 @@ mod init;
 use cortex_m::peripheral::syst::SystClkSource;
 use stm32f429_rt::{
     CorePeripherals,
-    Peripherals, GPIOC, GPIOF, GPIOD,
+    Peripherals, GPIOC, GPIOF, GPIOD, RCC,
 };
 
 use core::panic::PanicInfo;
@@ -132,16 +132,45 @@ fn configure_gpiof(gpiof: &mut GPIOF) {
     });
 }
 
-fn entrypoint() -> ! {
-    let mut peripherals = Peripherals::take().unwrap();
-    let mut cperipherals = stm32f429_rt::CorePeripherals::take().unwrap();
+fn configure_rcc(rcc: &mut RCC) {
+    rcc.apb1enr.write(|w| {
+        w.pwren().set_bit()
+    });
 
+    rcc.apb1lpenr.write(|w| {
+        w.pwrlpen().set_bit()
+    });
+
+    // rcc.apb2enr.write(|w| w.ltdcen().set_bit());
+}
+
+fn program_led(mut peripherals: Peripherals, mut cperipherals: CorePeripherals) {
     // Activating the GPIOG
     peripherals.RCC.ahb1enr.modify(|_, w| w.gpiogen().set_bit());
+
+    // Setting output mode for the PG13 pin
+    peripherals.GPIOG.moder.modify(|_, w| unsafe { w.moder13().bits(0x01) });
+    peripherals.GPIOG.moder.modify(|_, w| unsafe { w.moder14().bits(0x01) });
+
+    peripherals.GPIOG.odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
+
+    let count: u32 = (16_000_000 / 1_000) - 1;
+    configure_clock(&mut cperipherals.SYST, 8_000_000 - 1);
+
+    loop {}
+}
+
+fn entrypoint() -> ! {
+    let mut peripherals = unsafe { Peripherals::steal() };
+    let mut cperipherals = unsafe {
+        CorePeripherals::steal()
+    };
 
     // TODO
     // apb1enr pwren high
     // ...
+
+    configure_rcc(&mut peripherals.RCC);
 
     // Activating GPIO C, D and F for LTDC
     peripherals.RCC.ahb1enr.modify(|_, w| {
@@ -153,15 +182,6 @@ fn entrypoint() -> ! {
     configure_gpioc(&mut peripherals.GPIOC);
     configure_gpiod(&mut peripherals.GPIOD);
     configure_gpiof(&mut peripherals.GPIOF);
-
-    // Setting output mode for the PG13 pin
-    peripherals.GPIOG.moder.modify(|_, w| unsafe { w.moder13().bits(0x01) });
-    peripherals.GPIOG.moder.modify(|_, w| unsafe { w.moder14().bits(0x01) });
-
-    peripherals.GPIOG.odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
-
-    let count: u32 = (16_000_000 / 1_000) - 1;
-    configure_clock(&mut cperipherals.SYST, 8_000_000 - 1);
 
     loop {}
 }
