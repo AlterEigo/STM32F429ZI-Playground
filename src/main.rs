@@ -141,7 +141,9 @@ fn configure_rcc(rcc: &mut RCC) {
         w.pwrlpen().set_bit()
     });
 
-    // rcc.apb2enr.write(|w| w.ltdcen().set_bit());
+    // rcc.apb2enr.write(|w| w.);
+    rcc.apb2enr.write(|w| w.ltdcen().clear_bit());
+    rcc.apb2lpenr.write(|w| w.ltdclpen().clear_bit());
 }
 
 fn program_led(mut peripherals: Peripherals, mut cperipherals: CorePeripherals) {
@@ -162,9 +164,7 @@ fn program_led(mut peripherals: Peripherals, mut cperipherals: CorePeripherals) 
 
 fn entrypoint() -> ! {
     let mut peripherals = unsafe { Peripherals::steal() };
-    let mut cperipherals = unsafe {
-        CorePeripherals::steal()
-    };
+    let mut cperipherals = unsafe { CorePeripherals::steal() };
 
     // TODO
     // apb1enr pwren high
