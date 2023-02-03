@@ -121,6 +121,20 @@ fn entrypoint() -> ! {
     // Activating the GPIOG
     peripherals.RCC.ahb1enr.modify(|_, w| w.gpiogen().set_bit());
 
+    // TODO
+    // apb1enr pwren high
+    // ...
+
+    // Activating GPIO C, D and F for LTDC
+    peripherals.RCC.ahb1enr.modify(|_, w| {
+        w.gpiocen().set_bit();
+        w.gpioden().set_bit();
+        w.gpiofen().set_bit()
+    });
+
+    configure_gpioc(&mut peripherals.GPIOC);
+    configure_gpiof(&mut peripherals.GPIOF);
+
     // Setting output mode for the PG13 pin
     peripherals.GPIOG.moder.modify(|_, w| unsafe { w.moder13().bits(0x01) });
     peripherals.GPIOG.moder.modify(|_, w| unsafe { w.moder14().bits(0x01) });
