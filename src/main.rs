@@ -33,25 +33,17 @@ pub unsafe extern "C" fn reset() -> ! {
     let datalen = &_edata as *const u8 as usize - &_sdata as *const u8 as usize;
     ptr::copy_nonoverlapping(&_sidata as *const u8, &mut _sdata as *mut u8, datalen);
 
-    // Init
-    // HAL_SYSTICK_Config(16000000 / (1000u32 / 1u32))
-
     entrypoint()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn sys_tick() {
-    static mut count: u32 = 0;
     // Toggling value of PG13
     
-    if count == 500 {
-        count = 0;
-        (*stm32f429_rt::GPIOG::ptr())
-            .odr.modify(|r, w| w.odr13().bit(!r.odr13().bit()));
-        (*stm32f429_rt::GPIOG::ptr())
-            .odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
-    }
-    count += 1;
+    (*stm32f429_rt::GPIOG::ptr())
+        .odr.modify(|r, w| w.odr13().bit(!r.odr13().bit()));
+    (*stm32f429_rt::GPIOG::ptr())
+        .odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
 }
 
 fn configure_clock(syst: &mut stm32f429_rt::SYST, freq: u32) {
@@ -92,7 +84,7 @@ fn entrypoint() -> ! {
     peripherals.GPIOG.odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
 
     let count: u32 = (16_000_000 / 1_000) - 1;
-    configure_clock(&mut cperipherals.SYST, count);
+    configure_clock(&mut cperipherals.SYST, 8_000_000 - 1);
 
     loop {}
 }
