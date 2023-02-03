@@ -7,7 +7,7 @@ mod init;
 use cortex_m::peripheral::syst::SystClkSource;
 use stm32f429_rt::{
     CorePeripherals,
-    Peripherals
+    Peripherals, GPIOC, GPIOF,
 };
 
 use core::panic::PanicInfo;
@@ -68,6 +68,50 @@ fn configure_clock(syst: &mut stm32f429_rt::SYST, freq: u32) {
     syst.enable_interrupt();
 
     syst.enable_counter();
+}
+
+fn configure_gpioc(gpioc: &mut GPIOC) {
+    gpioc.moder.write(|w| unsafe {
+        w.moder2().bits(0b01) // Mode: Output
+    });
+    gpioc.otyper.write(|w| {
+        w.ot2().clear_bit() // Output type: push-pull
+    });
+    gpioc.ospeedr.write(|w| unsafe {
+        w.ospeedr2().bits(0b11) // Speed: maximum
+    });
+}
+
+fn configure_gpiof(gpiof: &mut GPIOF) {
+    // Setting alternate function 5 for pins 7,8 and 9 of port GPIOF
+    gpiof.afrl.write(|w| unsafe {
+        w.afrl7().bits(0b0101) // AF5 = SPI1/2/3/4/5
+    });
+
+    gpiof.afrh.write(|w| unsafe {
+        w.afrh8().bits(0b0101);
+        w.afrh9().bits(0b0101)
+    });
+
+    gpiof.otyper.write(|w| {
+        w.ot7().clear_bit(); // push-pull
+        w.ot8().set_bit();   // open-drain
+        w.ot9().clear_bit()  // push-pull
+    });
+
+    // Setting max speed for all used pins
+    gpiof.ospeedr.write(|w| unsafe {
+        w.ospeedr7().bits(0b11);
+        w.ospeedr8().bits(0b11);
+        w.ospeedr9().bits(0b11)
+    });
+
+    // Enabling alternate function mode for 7th, 8th and 9th pins 
+    gpiof.moder.write(|w| unsafe {
+        w.moder7().bits(0x10);
+        w.moder8().bits(0x10);
+        w.moder9().bits(0x10)
+    });
 }
 
 fn entrypoint() -> ! {
