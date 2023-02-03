@@ -144,6 +144,9 @@ fn configure_rcc(rcc: &mut RCC) {
     // rcc.apb2enr.write(|w| w.);
     rcc.apb2enr.write(|w| w.ltdcen().clear_bit());
     rcc.apb2lpenr.write(|w| w.ltdclpen().clear_bit());
+
+    rcc.apb2enr.write(|w| w.spi5en().set_bit());
+    rcc.apb2lpenr.write(|w| w.spi5lpen().set_bit());
 }
 
 fn program_led(mut peripherals: Peripherals, mut cperipherals: CorePeripherals) {
