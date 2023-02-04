@@ -192,7 +192,34 @@ fn configure_gpiof(gpiof: &mut GPIOF) {
     });
 }
 
-fn configure_rcc(rcc: &mut RCC) {
+fn configure_rcc(p: &mut Peripherals) {
+    let rcc = &mut p.RCC;
+    let tim5 = &mut p.TIM5;
+
+    // Enabling TIM5 clock
+    {
+        rcc.apb1enr.write(|w| w.tim5en().set_bit());
+
+        tim5.arr.write(|w| w
+            // We want an update each millisecond, if the
+            // clock frequency is 16MHz
+            .arr_l().variant(16_000 - 1)
+        );
+
+        tim5.cr1.write(|w| w
+            .dir().clear_bit()
+            // .arpe().set_bit()
+            // .cms().variant(0)
+            .opm().set_bit()
+            // .urs().set_bit()
+            .udis().clear_bit()
+            // .cen().set_bit()
+        );
+    }
+
+    tim5.delay_ms(10000);
+
+    // Activating APB1 and APB1LP
     rcc.apb1enr.write(|w| {
         w.pwren().set_bit()
     });
@@ -233,7 +260,7 @@ fn entrypoint() -> ! {
     // apb1enr pwren high
     // ...
 
-    configure_rcc(&mut peripherals.RCC);
+    configure_rcc(&mut peripherals);
 
     // Activating GPIO C, D and F for LTDC
     peripherals.RCC.ahb1enr.modify(|_, w| {
