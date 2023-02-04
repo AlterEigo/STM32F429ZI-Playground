@@ -22,6 +22,52 @@ trait MsDelay: Deref<Target = Self::TargetTimRegister> {
     fn delay_ms(&mut self, dt: u32);
 }
 
+impl MsDelay for stm32f429_rt::TIM5
+{
+    type TargetTimRegister = tim5::RegisterBlock;
+
+    fn delay_ms(&mut self, dt: u32) {
+        // Asserting timer is in pulse mode
+        assert!(self.cr1.read().opm().bit_is_set());
+
+        // Asserting the timer is inactive at this precise moment
+        assert!(self.cr1.read().cen().bit_is_clear());
+
+        // Asserting no pending update
+        assert!(self.sr.read().uif().bit_is_clear());
+
+        // Asserting 0 value in the count register
+        self.cnt.write(|w| w
+            .cnt_l().variant(0)
+            .cnt_h().variant(0)
+        );
+
+        // Asserting time step of 1ms, assuming running in 16MHz mode
+        let old_arr: u32 = self.arr.read().bits();
+        let new_arr: u32 = (16_000_000 / 1000 * dt) - 1;
+        self.arr.write(|w| w
+            .arr_l().variant((new_arr & 0x1111) as u16)
+            .arr_h().variant((new_arr >> 16) as u16)
+        );
+        
+        // Activating timer clock
+        self.cr1.write(|w| w
+            .cen().set_bit()
+        );
+
+        loop {
+            if self.sr.read().uif().bit_is_set() {
+                self.sr.write(|w| w.uif().clear_bit());
+                break
+            }
+        }
+
+        self.arr.write(|w| unsafe {
+            w.bits(old_arr)
+        });
+    }
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn reset() -> ! {
     extern "C" {
