@@ -7,15 +7,20 @@ mod init;
 use cortex_m::peripheral::syst::SystClkSource;
 use stm32f429_rt::{
     CorePeripherals,
-    Peripherals, GPIOC, GPIOF, GPIOD, RCC,
+    Peripherals, GPIOC, GPIOF, GPIOD, RCC, tim2, tim5,
 };
 
+use core::cell::{RefCell, RefMut, Ref};
+use core::marker::PhantomData;
+use core::ops::Deref;
 use core::panic::PanicInfo;
 use core::ptr;
 
-static RODATA: &[u8] = b"Hello world";
-static mut BSS: u8 = 7;
-static mut DATA: u16 = 9;
+trait MsDelay: Deref<Target = Self::TargetTimRegister> {
+    type TargetTimRegister;
+
+    fn delay_ms(&mut self, dt: u32);
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn reset() -> ! {
