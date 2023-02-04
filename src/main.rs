@@ -202,14 +202,13 @@ fn configure_rcc(p: &mut Peripherals) {
             .dir().clear_bit()
             // .arpe().set_bit()
             // .cms().variant(0)
-            .opm().set_bit()
+            // .opm().set_bit()
             // .urs().set_bit()
             .udis().clear_bit()
-            // .cen().set_bit()
+            .cen().set_bit()
         );
     }
 
-    tim5.delay_ms(10000);
 
     // Activating APB1 and APB1LP
     rcc.apb1enr.write(|w| {
