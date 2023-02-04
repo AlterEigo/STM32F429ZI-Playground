@@ -68,6 +68,15 @@ impl MsDelay for stm32f429_rt::TIM5
     }
 }
 
+impl MsDelay for stm32f429_rt::TIM2
+{
+    type TargetTimRegister = tim2::RegisterBlock;
+
+    fn delay_ms(&mut self, dt: u32) {
+        todo!()
+    }
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn reset() -> ! {
     extern "C" {
