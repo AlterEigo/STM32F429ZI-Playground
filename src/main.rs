@@ -412,9 +412,9 @@ fn configure_gpiod(gpiod: &mut GPIOD) {
         w.ot13().clear_bit()
     });
     // Speed: maximum
-    gpiod.ospeedr.write(|w| unsafe {
-        w.ospeedr12().bits(0b11);
-        w.ospeedr12().bits(0b11)
+    gpiod.ospeedr.write(|w| {
+        w.ospeedr12().variant(0b11);
+        w.ospeedr13().variant(0b11)
     });
 }
 
