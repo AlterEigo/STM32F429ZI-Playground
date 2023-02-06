@@ -345,6 +345,8 @@ fn entrypoint() -> ! {
         );
 
         peripherals.SPI5.cr1.modify(|_, w| w
+            // Enabling SPI
+            .spe().set_bit()
             // Fpclk/4
             .br().variant(0b001)
             // As master
