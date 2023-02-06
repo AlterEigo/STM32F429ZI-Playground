@@ -16,6 +16,7 @@ use core::ptr;
 
 const SCREEN_X_MAX: u16 = 240;
 const SCREEN_Y_MAX: u16 = 320;
+const PIXELS: u32 = SCREEN_X_MAX as u32 * SCREEN_Y_MAX as u32;
 
 struct Peripherals {
     native: NativePeripherals,
@@ -130,6 +131,22 @@ impl Peripherals {
         self.tft_write(y_pos1);
         self.tft_write(y_pos2);
         self.tft_write(TftCommand::Gram);
+    }
+
+    fn tft_fill(&self, color: u16) {
+        let mut index = PIXELS;
+
+        self.tft_set_display_window(
+            0,
+            0,
+            self.screen_max_x.get() - 1,
+            self.screen_max_y.get() - 1
+        );
+
+        while index > 0 {
+            self.tft_write(color);
+            index -= 1;
+        }
     }
 
 }
