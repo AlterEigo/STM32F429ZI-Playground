@@ -17,6 +17,14 @@ use core::panic::PanicInfo;
 use core::ptr;
 
 #[derive(Clone, Copy)]
+enum TftRotation {
+    Portrait1,
+    Portrait2,
+    Landscape1,
+    Landscape2
+}
+
+#[derive(Clone, Copy)]
 enum TftMessage {
     Command(TftCommand),
     RawByte(u8)
@@ -120,6 +128,8 @@ trait PeripheralsHl {
     fn tft_reset(&self);
 
     fn tft_on_off(&self, value: bool);
+
+    fn tft_set_rotation(&self, rotation: TftRotation);
 }
 
 impl PeripheralsHl for Peripherals {
@@ -165,6 +175,10 @@ impl PeripheralsHl for Peripherals {
         } else {
             self.tft_write(TftCommand::DisplayOff);
         }
+    }
+
+    fn tft_set_rotation(&self, rotation: TftRotation) {
+        todo!()
     }
 }
 
