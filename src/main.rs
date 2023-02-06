@@ -4,6 +4,7 @@
 
 mod init;
 
+use cortex_m::peripheral::syst::SystClkSource;
 use stm32f429_rt::{
     CorePeripherals,
     Peripherals as NativePeripherals, GPIOC, GPIOF, GPIOD, tim2, tim5,
@@ -499,10 +500,13 @@ fn entrypoint() -> ! {
     // TODO
     // apb1enr pwren high
     // ...
+    
+    cperipherals.SYST.set_clock_source(SystClkSource::Core);
+    // cperipherals.SYST.set_reload(16_000_000 - 1);
 
     configure_rcc(&mut peripherals);
 
-    // Activating GPIO C, D and F for LTDC
+    // Activating GPIO C, D and F for TFT
     peripherals.RCC.ahb1enr.modify(|_, w| {
         w.gpiocen().set_bit();
         w.gpioden().set_bit();
