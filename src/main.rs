@@ -365,15 +365,25 @@ fn entrypoint() -> ! {
             .ssi().set_bit()
         );
 
-        peripherals.SPI5.cr2.write(|w| w
+        // peripherals.SPI5.cr2.write(|w| w
             // SS disable
-            .ssoe().clear_bit()
+            // .ssoe().clear_bit()
             // TI (8080) mode
-            .frf().set_bit()
-        );
+            // .frf().set_bit()
+        // );
 
-        // Enabling SPI5
-        peripherals.SPI5.cr1.write(|w| w.spe().set_bit());
+        peripherals.GPIOD.odr.modify(|_, w| w
+            .odr5().set_bit()
+            .odr4().set_bit()
+        );
+    }
+
+    {
+        peripherals.tft_reset();
+
+        // WRDISBV
+        peripherals.tft_write(0x51, TftMessageType::Command);
+        peripherals.tft_write(0x00, TftMessageType::Data);
     }
 
     loop {}
