@@ -26,6 +26,55 @@ impl Peripherals {
             native: NativePeripherals::steal()
         }
     }
+    
+    fn tft_write<M>(&self, msg: M)
+        where M: Into<TftMessage>
+    {
+        let msg = msg.into();
+        self.GPIOD.odr.modify(|_, w| {
+            match msg {
+                TftMessage::Command(_) => w.odr13().set_bit(),
+                TftMessage::RawByte(_) => w.odr13().clear_bit()
+            }
+        });
+
+        // Start transmission
+        self.GPIOC.odr.modify(|_, w| w.odr2().clear_bit());
+
+        // Transmit 1 byte via SPI5
+        match msg {
+            TftMessage::Command(cmd) => {
+                self.SPI5.write_byte(cmd as u8);
+            },
+            TftMessage::RawByte(byte) => {
+                self.SPI5.write_byte(byte);
+            },
+        }
+
+        // End transmission
+        self.GPIOC.odr.modify(|_, w| w.odr2().set_bit());
+    }
+
+    fn tft_reset(&self) {
+        self.GPIOD.odr.modify(|_, w| w.odr12().clear_bit());
+        
+        self.TIM5.delay_ms(20);
+
+        self.GPIOD.odr.modify(|_, w| w.odr12().set_bit());
+    }
+
+    fn tft_on_off(&self, value: bool) {
+        if value {
+            self.tft_write(TftCommand::DisplayOn);
+        } else {
+            self.tft_write(TftCommand::DisplayOff);
+        }
+    }
+
+    fn tft_set_rotation(&self, rotation: TftRotation) {
+        todo!()
+    }
+
 }
 
 impl Deref for Peripherals {
@@ -146,66 +195,6 @@ enum TftCommand {
     Gamma3En = 0xF2,
     Interface = 0xF6,
     Prc = 0xF7,
-}
-
-trait PeripheralsHl {
-    fn tft_write<M>(&self, msg: M) where M: Into<TftMessage>;
-
-    fn tft_reset(&self);
-
-    fn tft_on_off(&self, value: bool);
-
-    fn tft_set_rotation(&self, rotation: TftRotation);
-}
-
-impl PeripheralsHl for Peripherals {
-    fn tft_write<M>(&self, msg: M)
-        where M: Into<TftMessage>
-    {
-        let msg = msg.into();
-        self.GPIOD.odr.modify(|_, w| {
-            match msg {
-                TftMessage::Command(_) => w.odr13().set_bit(),
-                TftMessage::RawByte(_) => w.odr13().clear_bit()
-            }
-        });
-
-        // Start transmission
-        self.GPIOC.odr.modify(|_, w| w.odr2().clear_bit());
-
-        // Transmit 1 byte via SPI5
-        match msg {
-            TftMessage::Command(cmd) => {
-                self.SPI5.write_byte(cmd as u8);
-            },
-            TftMessage::RawByte(byte) => {
-                self.SPI5.write_byte(byte);
-            },
-        }
-
-        // End transmission
-        self.GPIOC.odr.modify(|_, w| w.odr2().set_bit());
-    }
-
-    fn tft_reset(&self) {
-        self.GPIOD.odr.modify(|_, w| w.odr12().clear_bit());
-        
-        self.TIM5.delay_ms(20);
-
-        self.GPIOD.odr.modify(|_, w| w.odr12().set_bit());
-    }
-
-    fn tft_on_off(&self, value: bool) {
-        if value {
-            self.tft_write(TftCommand::DisplayOn);
-        } else {
-            self.tft_write(TftCommand::DisplayOff);
-        }
-    }
-
-    fn tft_set_rotation(&self, rotation: TftRotation) {
-        todo!()
-    }
 }
 
 /// High-level SPI module methods
