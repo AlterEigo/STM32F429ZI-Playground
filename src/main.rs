@@ -622,7 +622,11 @@ fn entrypoint() -> ! {
 
         peripherals.tft_write(TftCommand::SleepOut);
         peripherals.TIM5.delay_ms(10);
-        // peripherals.tft_write(0x51, TftMessageType::Command);
+        
+        peripherals.tft_on_off(true);
+        peripherals.tft_write(TftCommand::Gram);
+
+        peripherals.tft_set_rotation(TftRotation::Landscape1);
     }
 
     loop {}
