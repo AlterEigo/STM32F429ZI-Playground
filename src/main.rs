@@ -16,6 +16,21 @@ use core::ops::Deref;
 use core::panic::PanicInfo;
 use core::ptr;
 
+#[derive(Clone, Copy)]
+enum TftMessageType {
+    Command = 0,
+    Data = 1
+}
+
+trait PeripheralsHl {
+    fn tft_write(&mut self, value: u8, mode: TftMessageType);
+}
+
+/// High-level SPI module methods
+trait SpiHl {
+    fn write_byte(&mut self, value: u8);
+}
+
 trait MsDelay: Deref<Target = Self::TargetTimRegister> {
     type TargetTimRegister;
 
@@ -208,7 +223,6 @@ fn configure_rcc(p: &mut Peripherals) {
             .cen().set_bit()
         );
     }
-
 
     // Activating APB1 and APB1LP
     rcc.apb1enr.write(|w| {
