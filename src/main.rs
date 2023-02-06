@@ -389,7 +389,7 @@ pub unsafe extern "C" fn reset() -> ! {
 #[no_mangle]
 pub unsafe extern "C" fn sys_tick() {}
 
-fn configure_gpioc(gpioc: &mut GPIOC) {
+fn configure_gpioc(gpioc: &GPIOC) {
     gpioc.moder.write(|w| unsafe {
         w.moder2().bits(0b01) // Mode: Output
     });
@@ -401,7 +401,7 @@ fn configure_gpioc(gpioc: &mut GPIOC) {
     });
 }
 
-fn configure_gpiod(gpiod: &mut GPIOD) {
+fn configure_gpiod(gpiod: &GPIOD) {
     // Output modes: gp output
     gpiod.moder.write(|w| unsafe {
         w.moder12().bits(0b01);
@@ -419,7 +419,7 @@ fn configure_gpiod(gpiod: &mut GPIOD) {
     });
 }
 
-fn configure_gpiof(gpiof: &mut GPIOF) {
+fn configure_gpiof(gpiof: &GPIOF) {
     // Setting alternate function 5 for pins 7,8 and 9 of port GPIOF
     gpiof.afrl.write(|w| unsafe {
         w.afrl7().bits(0b0101) // AF5 = SPI1/2/3/4/5
@@ -451,23 +451,25 @@ fn configure_gpiof(gpiof: &mut GPIOF) {
     });
 }
 
-fn configure_rcc(p: &mut Peripherals) {
+fn configure_rcc(p: &Peripherals) {
     let rcc = &p.RCC;
     let tim5 = &p.TIM5;
 
     // Activating APB1 and APB1LP
-    rcc.apb1enr.write(|w| {
-        w.pwren().set_bit()
+    rcc.apb1enr.write(|w| { w
+        .pwren().set_bit()
+        .tim5en().set_bit()
     });
 
     rcc.apb1lpenr.write(|w| {
         w.pwrlpen().set_bit()
     });
 
-    // Enabling TIM5 clock
-    {
-        rcc.apb1enr.modify(|_, w| w.tim5en().set_bit());
+    rcc.apb2enr.write(|w| w.ltdcen().clear_bit());
+    rcc.apb2lpenr.write(|w| w.ltdclpen().clear_bit());
 
+    // Configuring TIM5 clock
+    {
         tim5.arr.write(|w| w
             // We want an update each millisecond, if the
             // clock frequency is 16MHz
@@ -485,16 +487,63 @@ fn configure_rcc(p: &mut Peripherals) {
         );
     }
 
-    // rcc.apb2enr.write(|w| w.);
-    rcc.apb2enr.modify(|_, w| w.ltdcen().clear_bit());
-    rcc.apb2lpenr.modify(|_, w| w.ltdclpen().clear_bit());
+    // Activating GPIO C, D and F for TFT
+    p.RCC.ahb1enr.modify(|_, w| {
+        w.gpiocen().set_bit();
+        w.gpioden().set_bit();
+        w.gpiofen().set_bit()
+    });
+
+    configure_gpioc(&p.GPIOC);
+    configure_gpiod(&p.GPIOD);
+    configure_gpiof(&p.GPIOF);
+    p.TIM5.delay_ms(10);
 
     rcc.apb2enr.modify(|_, w| w.spi5en().set_bit());
     rcc.apb2lpenr.modify(|_, w| w.spi5lpen().set_bit());
+
+    configure_spi5(&p);
+    p.TIM5.delay_ms(10);
+}
+
+fn configure_spi5(peripherals: &Peripherals) {
+    peripherals.SPI5.cr1.modify(|_, w| w
+        // Enabling SPI
+        .spe().set_bit()
+        // Fpclk/4
+        .br().variant(0b001)
+        // As master
+        .mstr().set_bit()
+        // 8-bit mode
+        .dff().clear_bit()
+        // Idle low
+        .cpol().clear_bit()
+        // First clock transfer = first data capture
+        .cpha().clear_bit()
+        // Most significant bit first
+        .lsbfirst().clear_bit()
+        // -
+        .ssm().set_bit()
+        // -
+        .ssi().set_bit()
+    );
+
+    // peripherals.SPI5.cr2.write(|w| w
+        // // SS disable
+        // .ssoe().clear_bit()
+        // // TI (8080) mode
+        // .frf().set_bit()
+    // );
+
+    peripherals.GPIOD.odr.modify(|_, w| w
+        .odr7().set_bit()
+        .odr5().set_bit()
+        .odr4().set_bit()
+    );
 }
 
 fn entrypoint() -> ! {
-    let mut peripherals = unsafe { Peripherals::steal() };
+    let peripherals = unsafe { Peripherals::steal() };
     let mut cperipherals = unsafe { CorePeripherals::steal() };
 
     // TODO
@@ -504,66 +553,7 @@ fn entrypoint() -> ! {
     cperipherals.SYST.set_clock_source(SystClkSource::Core);
     // cperipherals.SYST.set_reload(16_000_000 - 1);
 
-    configure_rcc(&mut peripherals);
-
-    // Activating GPIO C, D and F for TFT
-    peripherals.RCC.ahb1enr.modify(|_, w| {
-        w.gpiocen().set_bit();
-        w.gpioden().set_bit();
-        w.gpiofen().set_bit()
-    });
-
-    configure_gpioc(&mut peripherals.GPIOC);
-    configure_gpiod(&mut peripherals.GPIOD);
-    configure_gpiof(&mut peripherals.GPIOF);
-
-    peripherals.TIM5.delay_ms(10);
-
-    // Configuring SPI
-    {
-        // Enabling clock
-        peripherals.RCC.apb2enr.modify(|_, w| w
-            .spi5en().set_bit()
-        );
-        // Enabling clock in sleep mode
-        peripherals.RCC.apb2lpenr.modify(|_, w| w
-            .spi5lpen().set_bit()
-        );
-
-        peripherals.SPI5.cr1.modify(|_, w| w
-            // Enabling SPI
-            .spe().set_bit()
-            // Fpclk/4
-            .br().variant(0b001)
-            // As master
-            .mstr().set_bit()
-            // 8-bit mode
-            .dff().clear_bit()
-            // Idle low
-            .cpol().clear_bit()
-            // First clock transfer = first data capture
-            .cpha().clear_bit()
-            // Most significant bit first
-            .lsbfirst().clear_bit()
-            // -
-            .ssm().set_bit()
-            // -
-            .ssi().set_bit()
-        );
-
-        // peripherals.SPI5.cr2.write(|w| w
-            // SS disable
-            // .ssoe().clear_bit()
-            // TI (8080) mode
-            // .frf().set_bit()
-        // );
-
-        peripherals.GPIOD.odr.modify(|_, w| w
-            .odr7().set_bit()
-            .odr5().set_bit()
-            .odr4().set_bit()
-        );
-    }
+    configure_rcc(&peripherals);
 
     {
         peripherals.tft_reset();
@@ -690,6 +680,14 @@ fn entrypoint() -> ! {
         peripherals.tft_write(TftCommand::Gram);
 
         peripherals.tft_set_rotation(TftRotation::Landscape1);
+
+        peripherals.tft_fill(0xF800);
+        peripherals.TIM5.delay_ms(600);
+        peripherals.tft_fill(0x07E0);
+        peripherals.TIM5.delay_ms(600);
+        peripherals.tft_fill(0xF800);
+        peripherals.TIM5.delay_ms(600);
+        peripherals.tft_fill(0x0000);
     }
 
     loop {}
