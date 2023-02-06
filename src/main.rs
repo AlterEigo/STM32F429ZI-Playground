@@ -278,6 +278,49 @@ fn entrypoint() -> ! {
     configure_gpiod(&mut peripherals.GPIOD);
     configure_gpiof(&mut peripherals.GPIOF);
 
+    peripherals.TIM5.delay_ms(10);
+
+    // Configuring SPI
+    {
+        // Enabling clock
+        peripherals.RCC.apb2enr.write(|w| w
+            .spi5en().set_bit()
+        );
+        // Enabling clock in sleep mode
+        peripherals.RCC.apb2lpenr.write(|w| w
+            .spi5lpen().set_bit()
+        );
+
+        peripherals.SPI5.cr1.write(|w| w
+            // Fpclk/4
+            .br().variant(0b001)
+            // As master
+            .mstr().set_bit()
+            // 8-bit mode
+            .dff().clear_bit()
+            // Idle low
+            .cpol().clear_bit()
+            // First clock transfer = first data capture
+            .cpha().clear_bit()
+            // Most significant bit first
+            .lsbfirst().clear_bit()
+            // -
+            .ssm().set_bit()
+            // -
+            .ssi().set_bit()
+        );
+
+        peripherals.SPI5.cr2.write(|w| w
+            // SS disable
+            .ssoe().clear_bit()
+            // TI (8080) mode
+            .frf().set_bit()
+        );
+
+        // Enabling SPI5
+        peripherals.SPI5.cr1.write(|w| w.spe().set_bit());
+    }
+
     loop {}
 }
 
