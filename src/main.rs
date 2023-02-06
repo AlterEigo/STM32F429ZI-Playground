@@ -269,38 +269,7 @@ pub unsafe extern "C" fn reset() -> ! {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn sys_tick() {
-    // Toggling value of PG13
-    
-    (*stm32f429_rt::GPIOG::ptr())
-        .odr.modify(|r, w| w.odr13().bit(!r.odr13().bit()));
-    (*stm32f429_rt::GPIOG::ptr())
-        .odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
-}
-
-fn configure_clock(syst: &mut stm32f429_rt::SYST, freq: u32) {
-
-    const OVMASK: u32 = 0x1100_0000;
-
-    if (freq & OVMASK) != 0x0 {
-        panic!("SYST reload value overflow (24-bit limitation)");
-    }
-
-    syst.set_clock_source(SystClkSource::Core);
-    
-    // Setting our own reload value
-    // Push reload value into [0,23] bits of SYST_RVR register
-    syst.set_reload(freq);
-
-    // Clearing any garbage value
-    // Reset value of [0,23] bits of SYST_CVR register
-    // (any value resets the value to 0)
-    syst.clear_current();
-
-    syst.enable_interrupt();
-
-    syst.enable_counter();
-}
+pub unsafe extern "C" fn sys_tick() {}
 
 fn configure_gpioc(gpioc: &mut GPIOC) {
     gpioc.moder.write(|w| unsafe {
@@ -404,22 +373,6 @@ fn configure_rcc(p: &mut Peripherals) {
 
     rcc.apb2enr.modify(|_, w| w.spi5en().set_bit());
     rcc.apb2lpenr.modify(|_, w| w.spi5lpen().set_bit());
-}
-
-fn program_led(mut peripherals: Peripherals, mut cperipherals: CorePeripherals) {
-    // Activating the GPIOG
-    peripherals.RCC.ahb1enr.modify(|_, w| w.gpiogen().set_bit());
-
-    // Setting output mode for the PG13 pin
-    peripherals.GPIOG.moder.modify(|_, w| unsafe { w.moder13().bits(0x01) });
-    peripherals.GPIOG.moder.modify(|_, w| unsafe { w.moder14().bits(0x01) });
-
-    peripherals.GPIOG.odr.modify(|r, w| w.odr14().bit(!r.odr14().bit()));
-
-    let count: u32 = (16_000_000 / 1_000) - 1;
-    configure_clock(&mut cperipherals.SYST, 8_000_000 - 1);
-
-    loop {}
 }
 
 fn entrypoint() -> ! {
