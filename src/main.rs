@@ -51,6 +51,23 @@ trait SpiHl {
     fn write_byte(&mut self, value: u8);
 }
 
+impl SpiHl for stm32f429_rt::SPI5 {
+    fn write_byte(&mut self, value: u8) {
+        // Assert the TXE flag is set before writing
+        // (We wait until it is set)
+        while self.sr.read().txe().bit_is_clear() { /* do nothing */ }
+
+        // Write byte into Tx buffer
+        self.dr.write(|w| w.dr().variant(value as u16));
+
+        // Wait until transmitted data is sampled
+        while self.sr.read().rxne().bit_is_clear() { /* do nothing */ }
+
+        // Discarding received data and causing RXNE to clear
+        let _: u16 = self.dr.read().dr().bits();
+    }
+}
+
 trait MsDelay: Deref<Target = Self::TargetTimRegister> {
     type TargetTimRegister;
 
