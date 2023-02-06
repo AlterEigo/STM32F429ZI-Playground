@@ -7,14 +7,40 @@ mod init;
 use cortex_m::peripheral::syst::SystClkSource;
 use stm32f429_rt::{
     CorePeripherals,
-    Peripherals, GPIOC, GPIOF, GPIOD, RCC, tim2, tim5,
+    Peripherals as NativePeripherals, GPIOC, GPIOF, GPIOD, RCC, tim2, tim5,
 };
 
 use core::cell::{RefCell, RefMut, Ref};
 use core::marker::PhantomData;
-use core::ops::Deref;
+use core::ops::{Deref, DerefMut};
 use core::panic::PanicInfo;
 use core::ptr;
+
+struct Peripherals {
+    native: NativePeripherals
+}
+
+impl Peripherals {
+    unsafe fn steal() -> Self {
+        Self {
+            native: NativePeripherals::steal()
+        }
+    }
+}
+
+impl Deref for Peripherals {
+    type Target = NativePeripherals;
+
+    fn deref(&self) -> &Self::Target {
+        &self.native
+    }
+}
+
+impl DerefMut for Peripherals {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.native
+    }
+}
 
 #[derive(Clone, Copy)]
 enum TftRotation {
@@ -348,8 +374,8 @@ fn configure_gpiof(gpiof: &mut GPIOF) {
 }
 
 fn configure_rcc(p: &mut Peripherals) {
-    let rcc = &mut p.RCC;
-    let tim5 = &mut p.TIM5;
+    let rcc = &p.RCC;
+    let tim5 = &p.TIM5;
 
     // Activating APB1 and APB1LP
     rcc.apb1enr.write(|w| {
