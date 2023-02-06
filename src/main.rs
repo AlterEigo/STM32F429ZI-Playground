@@ -4,14 +4,12 @@
 
 mod init;
 
-use cortex_m::peripheral::syst::SystClkSource;
 use stm32f429_rt::{
     CorePeripherals,
-    Peripherals as NativePeripherals, GPIOC, GPIOF, GPIOD, RCC, tim2, tim5,
+    Peripherals as NativePeripherals, GPIOC, GPIOF, GPIOD, tim2, tim5,
 };
 
-use core::cell::{RefCell, RefMut, Ref, Cell};
-use core::marker::PhantomData;
+use core::cell::Cell;
 use core::ops::{Deref, DerefMut};
 use core::panic::PanicInfo;
 use core::ptr;
