@@ -118,6 +118,8 @@ trait PeripheralsHl {
     fn tft_write<M>(&self, msg: M) where M: Into<TftMessage>;
 
     fn tft_reset(&self);
+
+    fn tft_on_off(&self, value: bool);
 }
 
 impl PeripheralsHl for Peripherals {
@@ -155,6 +157,14 @@ impl PeripheralsHl for Peripherals {
         self.TIM5.delay_ms(20);
 
         self.GPIOD.odr.modify(|_, w| w.odr12().set_bit());
+    }
+
+    fn tft_on_off(&self, value: bool) {
+        if value {
+            self.tft_write(TftCommand::DisplayOn);
+        } else {
+            self.tft_write(TftCommand::DisplayOff);
+        }
     }
 }
 
