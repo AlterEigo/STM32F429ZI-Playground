@@ -562,6 +562,7 @@ fn entrypoint() -> ! {
 
     {
         peripherals.tft_reset();
+        peripherals.TIM5.delay_ms(60);
 
         // WRDISBV
         peripherals.tft_write(TftCommand::Reset);
@@ -678,7 +679,7 @@ fn entrypoint() -> ! {
         peripherals.tft_write(0x0F as u8);
 
         peripherals.tft_write(TftCommand::SleepOut);
-        peripherals.TIM5.delay_ms(10);
+        peripherals.TIM5.delay_ms(100);
         
         peripherals.tft_on_off(true);
         peripherals.tft_write(TftCommand::Gram);
