@@ -250,6 +250,15 @@ fn configure_rcc(p: &mut Peripherals) {
     let rcc = &mut p.RCC;
     let tim5 = &mut p.TIM5;
 
+    // Activating APB1 and APB1LP
+    rcc.apb1enr.write(|w| {
+        w.pwren().set_bit()
+    });
+
+    rcc.apb1lpenr.write(|w| {
+        w.pwrlpen().set_bit()
+    });
+
     // Enabling TIM5 clock
     {
         rcc.apb1enr.write(|w| w.tim5en().set_bit());
@@ -270,15 +279,6 @@ fn configure_rcc(p: &mut Peripherals) {
             .cen().set_bit()
         );
     }
-
-    // Activating APB1 and APB1LP
-    rcc.apb1enr.write(|w| {
-        w.pwren().set_bit()
-    });
-
-    rcc.apb1lpenr.write(|w| {
-        w.pwrlpen().set_bit()
-    });
 
     // rcc.apb2enr.write(|w| w.);
     rcc.apb2enr.write(|w| w.ltdcen().clear_bit());
