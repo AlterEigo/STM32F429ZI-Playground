@@ -79,7 +79,33 @@ impl Peripherals {
     }
 
     fn tft_set_rotation(&self, rotation: TftRotation) {
-        todo!()
+        self.tft_write(TftCommand::Mac);
+
+        match rotation {
+            TftRotation::Portrait1 => {
+                self.tft_write(0x58);
+            },
+            TftRotation::Portrait2 => {
+                self.tft_write(0x88);
+            },
+            TftRotation::Landscape1 => {
+                self.tft_write(0x28);
+            },
+            TftRotation::Landscape2 => {
+                self.tft_write(0xE8);
+            },
+        }
+
+        match rotation {
+            TftRotation::Portrait1 | TftRotation::Portrait2 => {
+                self.screen_max_x.replace(SCREEN_X_MAX);
+                self.screen_max_y.replace(SCREEN_Y_MAX);
+            },
+            TftRotation::Landscape1 | TftRotation::Landscape2 => {
+                self.screen_max_x.replace(SCREEN_Y_MAX);
+                self.screen_max_y.replace(SCREEN_X_MAX);
+            },
+        }
     }
 
 }
