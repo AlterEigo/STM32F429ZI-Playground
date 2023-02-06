@@ -40,8 +40,8 @@ impl Peripherals {
         let msg = msg.into();
         self.GPIOD.odr.modify(|_, w| {
             match msg {
-                TftMessage::Command(_) => w.odr13().set_bit(),
-                _ => w.odr13().clear_bit(),
+                TftMessage::Command(_) => w.odr13().clear_bit(),
+                _ => w.odr13().set_bit(),
             }
         });
 
@@ -559,7 +559,6 @@ fn entrypoint() -> ! {
         peripherals.tft_reset();
         peripherals.TIM5.delay_ms(60);
 
-        // WRDISBV
         peripherals.tft_write(TftCommand::Reset);
         peripherals.tft_write(0x00 as u8);
 
