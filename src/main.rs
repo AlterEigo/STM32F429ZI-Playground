@@ -10,20 +10,24 @@ use stm32f429_rt::{
     Peripherals as NativePeripherals, GPIOC, GPIOF, GPIOD, RCC, tim2, tim5,
 };
 
-use core::cell::{RefCell, RefMut, Ref};
+use core::cell::{RefCell, RefMut, Ref, Cell};
 use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::panic::PanicInfo;
 use core::ptr;
 
 struct Peripherals {
-    native: NativePeripherals
+    native: NativePeripherals,
+    screen_max_x: Cell<u16>,
+    screen_max_y: Cell<u16>,
 }
 
 impl Peripherals {
     unsafe fn steal() -> Self {
         Self {
-            native: NativePeripherals::steal()
+            native: NativePeripherals::steal(),
+            screen_max_x: Cell::new(240),
+            screen_max_y: Cell::new(320)
         }
     }
     
