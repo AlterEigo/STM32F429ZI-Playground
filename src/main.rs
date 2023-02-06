@@ -17,23 +17,43 @@ use core::panic::PanicInfo;
 use core::ptr;
 
 #[derive(Clone, Copy)]
-enum TftMessageType {
-    Command = 0,
-    Data = 1
+enum TftMessage {
+    Command(TftCommand),
+    RawByte(u8)
+}
+
+impl From<TftCommand> for TftMessage {
+    fn from(value: TftCommand) -> Self {
+        Self::Command(value)
+    }
+}
+
+impl From<u8> for TftMessage {
+    fn from(value: u8) -> Self {
+        Self::RawByte(value)
+    }
+}
+
+#[derive(Clone, Copy)]
+enum TftCommand {
+    RESET = 0x01
 }
 
 trait PeripheralsHl {
-    fn tft_write(&self, value: u8, mode: TftMessageType);
+    fn tft_write<M>(&self, msg: M) where M: Into<TftMessage>;
 
     fn tft_reset(&self);
 }
 
 impl PeripheralsHl for Peripherals {
-    fn tft_write(&self, value: u8, mode: TftMessageType) {
+    fn tft_write<M>(&self, msg: M)
+        where M: Into<TftMessage>
+    {
+        let msg = msg.into();
         self.GPIOD.odr.modify(|_, w| {
-            match mode {
-                TftMessageType::Command => w.odr13().set_bit(),
-                TftMessageType::Data => w.odr13().clear_bit()
+            match msg {
+                TftMessage::Command(_) => w.odr13().set_bit(),
+                TftMessage::RawByte(_) => w.odr13().clear_bit()
             }
         });
 
@@ -41,7 +61,14 @@ impl PeripheralsHl for Peripherals {
         self.GPIOC.odr.modify(|_, w| w.odr2().clear_bit());
 
         // Transmit 1 byte via SPI5
-        self.SPI5.write_byte(value);
+        match msg {
+            TftMessage::Command(cmd) => {
+                self.SPI5.write_byte(cmd as u8);
+            },
+            TftMessage::RawByte(byte) => {
+                self.SPI5.write_byte(byte);
+            },
+        }
 
         // End transmission
         self.GPIOC.odr.modify(|_, w| w.odr2().set_bit());
@@ -382,8 +409,10 @@ fn entrypoint() -> ! {
         peripherals.tft_reset();
 
         // WRDISBV
-        peripherals.tft_write(0x51, TftMessageType::Command);
-        peripherals.tft_write(0x00, TftMessageType::Data);
+        peripherals.tft_write(TftCommand::RESET);
+        peripherals.tft_write(0x00 as u8);
+
+        // peripherals.tft_write(0x51, TftMessageType::Command);
     }
 
     loop {}
