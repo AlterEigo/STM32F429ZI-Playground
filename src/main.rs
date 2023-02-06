@@ -26,6 +26,26 @@ trait PeripheralsHl {
     fn tft_write(&mut self, value: u8, mode: TftMessageType);
 }
 
+impl PeripheralsHl for Peripherals {
+    fn tft_write(&mut self, value: u8, mode: TftMessageType) {
+        self.GPIOD.odr.write(|w| {
+            match mode {
+                TftMessageType::Command => w.odr13().set_bit(),
+                TftMessageType::Data => w.odr13().clear_bit()
+            }
+        });
+
+        // Start transmission
+        self.GPIOC.odr.write(|w| w.odr2().clear_bit());
+
+        // Transmit 1 byte via SPI5
+        self.SPI5.write_byte(value);
+
+        // End transmission
+        self.GPIOC.odr.write(|w| w.odr2().set_bit());
+    }
+}
+
 /// High-level SPI module methods
 trait SpiHl {
     fn write_byte(&mut self, value: u8);
