@@ -24,6 +24,8 @@ enum TftMessageType {
 
 trait PeripheralsHl {
     fn tft_write(&self, value: u8, mode: TftMessageType);
+
+    fn tft_reset(&self);
 }
 
 impl PeripheralsHl for Peripherals {
@@ -43,6 +45,14 @@ impl PeripheralsHl for Peripherals {
 
         // End transmission
         self.GPIOC.odr.write(|w| w.odr2().set_bit());
+    }
+
+    fn tft_reset(&self) {
+        self.GPIOD.odr.write(|w| w.odr12().clear_bit());
+        
+        self.TIM5.delay_ms(20);
+
+        self.GPIOD.odr.write(|w| w.odr12().set_bit());
     }
 }
 
