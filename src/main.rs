@@ -30,7 +30,7 @@ trait PeripheralsHl {
 
 impl PeripheralsHl for Peripherals {
     fn tft_write(&self, value: u8, mode: TftMessageType) {
-        self.GPIOD.odr.write(|w| {
+        self.GPIOD.odr.modify(|_, w| {
             match mode {
                 TftMessageType::Command => w.odr13().set_bit(),
                 TftMessageType::Data => w.odr13().clear_bit()
@@ -38,21 +38,21 @@ impl PeripheralsHl for Peripherals {
         });
 
         // Start transmission
-        self.GPIOC.odr.write(|w| w.odr2().clear_bit());
+        self.GPIOC.odr.modify(|_, w| w.odr2().clear_bit());
 
         // Transmit 1 byte via SPI5
         self.SPI5.write_byte(value);
 
         // End transmission
-        self.GPIOC.odr.write(|w| w.odr2().set_bit());
+        self.GPIOC.odr.modify(|_, w| w.odr2().set_bit());
     }
 
     fn tft_reset(&self) {
-        self.GPIOD.odr.write(|w| w.odr12().clear_bit());
+        self.GPIOD.odr.modify(|_, w| w.odr12().clear_bit());
         
         self.TIM5.delay_ms(20);
 
-        self.GPIOD.odr.write(|w| w.odr12().set_bit());
+        self.GPIOD.odr.modify(|_, w| w.odr12().set_bit());
     }
 }
 
@@ -261,7 +261,7 @@ fn configure_rcc(p: &mut Peripherals) {
 
     // Enabling TIM5 clock
     {
-        rcc.apb1enr.write(|w| w.tim5en().set_bit());
+        rcc.apb1enr.modify(|_, w| w.tim5en().set_bit());
 
         tim5.arr.write(|w| w
             // We want an update each millisecond, if the
@@ -281,11 +281,11 @@ fn configure_rcc(p: &mut Peripherals) {
     }
 
     // rcc.apb2enr.write(|w| w.);
-    rcc.apb2enr.write(|w| w.ltdcen().clear_bit());
-    rcc.apb2lpenr.write(|w| w.ltdclpen().clear_bit());
+    rcc.apb2enr.modify(|_, w| w.ltdcen().clear_bit());
+    rcc.apb2lpenr.modify(|_, w| w.ltdclpen().clear_bit());
 
-    rcc.apb2enr.write(|w| w.spi5en().set_bit());
-    rcc.apb2lpenr.write(|w| w.spi5lpen().set_bit());
+    rcc.apb2enr.modify(|_, w| w.spi5en().set_bit());
+    rcc.apb2lpenr.modify(|_, w| w.spi5lpen().set_bit());
 }
 
 fn program_led(mut peripherals: Peripherals, mut cperipherals: CorePeripherals) {
@@ -330,15 +330,15 @@ fn entrypoint() -> ! {
     // Configuring SPI
     {
         // Enabling clock
-        peripherals.RCC.apb2enr.write(|w| w
+        peripherals.RCC.apb2enr.modify(|_, w| w
             .spi5en().set_bit()
         );
         // Enabling clock in sleep mode
-        peripherals.RCC.apb2lpenr.write(|w| w
+        peripherals.RCC.apb2lpenr.modify(|_, w| w
             .spi5lpen().set_bit()
         );
 
-        peripherals.SPI5.cr1.write(|w| w
+        peripherals.SPI5.cr1.modify(|_, w| w
             // Fpclk/4
             .br().variant(0b001)
             // As master
