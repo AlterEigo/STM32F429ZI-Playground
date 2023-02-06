@@ -23,11 +23,11 @@ enum TftMessageType {
 }
 
 trait PeripheralsHl {
-    fn tft_write(&mut self, value: u8, mode: TftMessageType);
+    fn tft_write(&self, value: u8, mode: TftMessageType);
 }
 
 impl PeripheralsHl for Peripherals {
-    fn tft_write(&mut self, value: u8, mode: TftMessageType) {
+    fn tft_write(&self, value: u8, mode: TftMessageType) {
         self.GPIOD.odr.write(|w| {
             match mode {
                 TftMessageType::Command => w.odr13().set_bit(),
@@ -48,11 +48,11 @@ impl PeripheralsHl for Peripherals {
 
 /// High-level SPI module methods
 trait SpiHl {
-    fn write_byte(&mut self, value: u8);
+    fn write_byte(&self, value: u8);
 }
 
 impl SpiHl for stm32f429_rt::SPI5 {
-    fn write_byte(&mut self, value: u8) {
+    fn write_byte(&self, value: u8) {
         // Assert the TXE flag is set before writing
         // (We wait until it is set)
         while self.sr.read().txe().bit_is_clear() { /* do nothing */ }
@@ -71,14 +71,14 @@ impl SpiHl for stm32f429_rt::SPI5 {
 trait MsDelay: Deref<Target = Self::TargetTimRegister> {
     type TargetTimRegister;
 
-    fn delay_ms(&mut self, dt: u32);
+    fn delay_ms(&self, dt: u32);
 }
 
 impl MsDelay for stm32f429_rt::TIM5
 {
     type TargetTimRegister = tim5::RegisterBlock;
 
-    fn delay_ms(&mut self, dt: u32) {
+    fn delay_ms(&self, dt: u32) {
         // Asserting the timer is active at this precise moment
         assert!(self.cr1.read().cen().bit_is_set());
 
@@ -116,7 +116,7 @@ impl MsDelay for stm32f429_rt::TIM2
 {
     type TargetTimRegister = tim2::RegisterBlock;
 
-    fn delay_ms(&mut self, dt: u32) {
+    fn delay_ms(&self, dt: u32) {
         todo!()
     }
 }
