@@ -10,7 +10,7 @@ use stm32f429_rt::{
 };
 
 use core::cell::Cell;
-use core::ops::{Deref, DerefMut};
+use core::ops::{Deref, DerefMut, Shr};
 use core::panic::PanicInfo;
 use core::ptr;
 
@@ -39,20 +39,34 @@ impl Peripherals {
         self.GPIOD.odr.modify(|_, w| {
             match msg {
                 TftMessage::Command(_) => w.odr13().set_bit(),
-                TftMessage::RawByte(_) => w.odr13().clear_bit()
+                _ => w.odr13().clear_bit(),
             }
         });
 
         // Start transmission
         self.GPIOC.odr.modify(|_, w| w.odr2().clear_bit());
 
-        // Transmit 1 byte via SPI5
         match msg {
             TftMessage::Command(cmd) => {
                 self.SPI5.write_byte(cmd as u8);
             },
-            TftMessage::RawByte(byte) => {
+            TftMessage::Byte(byte) => {
                 self.SPI5.write_byte(byte);
+            },
+            TftMessage::HWord(hword) => {
+                self.SPI5.write_byte( (hword >> 8) as u8 );
+                self.SPI5.write_byte( (hword & 0x0011) as u8 );
+            },
+            TftMessage::Word(word) => {
+                let hhb = (word & 0x1100_0000).shr(24) as u8;
+                let hlb = (word & 0x0011_0000).shr(16) as u8;
+                let lhb = (word & 0x0000_1100).shr(8) as u8;
+                let llb = (word & 0x0000_0011) as u8;
+
+                self.SPI5.write_byte(hhb);
+                self.SPI5.write_byte(hlb);
+                self.SPI5.write_byte(lhb);
+                self.SPI5.write_byte(llb);
             },
         }
 
@@ -81,16 +95,16 @@ impl Peripherals {
 
         match rotation {
             TftRotation::Portrait1 => {
-                self.tft_write(0x58);
+                self.tft_write(0x58 as u8);
             },
             TftRotation::Portrait2 => {
-                self.tft_write(0x88);
+                self.tft_write(0x88 as u8);
             },
             TftRotation::Landscape1 => {
-                self.tft_write(0x28);
+                self.tft_write(0x28 as u8);
             },
             TftRotation::Landscape2 => {
-                self.tft_write(0xE8);
+                self.tft_write(0xE8 as u8);
             },
         }
 
@@ -133,7 +147,9 @@ enum TftRotation {
 #[derive(Clone, Copy)]
 enum TftMessage {
     Command(TftCommand),
-    RawByte(u8)
+    Byte(u8),
+    HWord(u16),
+    Word(u32)
 }
 
 impl From<TftCommand> for TftMessage {
@@ -144,7 +160,19 @@ impl From<TftCommand> for TftMessage {
 
 impl From<u8> for TftMessage {
     fn from(value: u8) -> Self {
-        Self::RawByte(value)
+        Self::Byte(value)
+    }
+}
+
+impl From<u16> for TftMessage {
+    fn from(value: u16) -> Self {
+        Self::HWord(value)
+    }
+}
+
+impl From<u32> for TftMessage {
+    fn from(value: u32) -> Self {
+        Self::Word(value)
     }
 }
 
@@ -511,114 +539,114 @@ fn entrypoint() -> ! {
         peripherals.tft_write(0x00 as u8);
 
         peripherals.tft_write(TftCommand::PowerA);
-        peripherals.tft_write(0x39);
-        peripherals.tft_write(0x2C);
-        peripherals.tft_write(0x00);
-        peripherals.tft_write(0x34);
-        peripherals.tft_write(0x02);
+        peripherals.tft_write(0x39 as u8);
+        peripherals.tft_write(0x2C as u8);
+        peripherals.tft_write(0x00 as u8);
+        peripherals.tft_write(0x34 as u8);
+        peripherals.tft_write(0x02 as u8);
 
         peripherals.tft_write(TftCommand::PowerB);
-        peripherals.tft_write(0x00);
-        peripherals.tft_write(0xC1);
-        peripherals.tft_write(0x30);
+        peripherals.tft_write(0x00 as u8);
+        peripherals.tft_write(0xC1 as u8);
+        peripherals.tft_write(0x30 as u8);
 
         peripherals.tft_write(TftCommand::DtcA);
-        peripherals.tft_write(0x85);
-        peripherals.tft_write(0x00);
-        peripherals.tft_write(0x78);
+        peripherals.tft_write(0x85 as u8);
+        peripherals.tft_write(0x00 as u8);
+        peripherals.tft_write(0x78 as u8);
 
         peripherals.tft_write(TftCommand::DtcB);
-        peripherals.tft_write(0x00);
-        peripherals.tft_write(0x00);
+        peripherals.tft_write(0x00 as u8);
+        peripherals.tft_write(0x00 as u8);
 
         peripherals.tft_write(TftCommand::PowerSeq);
-        peripherals.tft_write(0x64);
-        peripherals.tft_write(0x03);
-        peripherals.tft_write(0x12);
-        peripherals.tft_write(0x81);
+        peripherals.tft_write(0x64 as u8);
+        peripherals.tft_write(0x03 as u8);
+        peripherals.tft_write(0x12 as u8);
+        peripherals.tft_write(0x81 as u8);
 
         peripherals.tft_write(TftCommand::Prc);
-        peripherals.tft_write(0x20);
+        peripherals.tft_write(0x20 as u8);
 
         peripherals.tft_write(TftCommand::Power1);
-        peripherals.tft_write(0x23);
+        peripherals.tft_write(0x23 as u8);
 
         peripherals.tft_write(TftCommand::Power2);
-        peripherals.tft_write(0x10);
+        peripherals.tft_write(0x10 as u8);
 
         peripherals.tft_write(TftCommand::Vcom1);
-        peripherals.tft_write(0x3E);
-        peripherals.tft_write(0x28);
+        peripherals.tft_write(0x3E as u8);
+        peripherals.tft_write(0x28 as u8);
 
         peripherals.tft_write(TftCommand::Vcom2);
-        peripherals.tft_write(0x86);
+        peripherals.tft_write(0x86 as u8);
 
         peripherals.tft_write(TftCommand::Mac);
-        peripherals.tft_write(0x48);
+        peripherals.tft_write(0x48 as u8);
 
         peripherals.tft_write(TftCommand::PixelFormat);
-        peripherals.tft_write(0x55);
+        peripherals.tft_write(0x55 as u8);
 
         peripherals.tft_write(TftCommand::Frc);
-        peripherals.tft_write(0x00);
-        peripherals.tft_write(0x18);
+        peripherals.tft_write(0x00 as u8);
+        peripherals.tft_write(0x18 as u8);
 
         peripherals.tft_write(TftCommand::Dfc);
-        peripherals.tft_write(0x08);
-        peripherals.tft_write(0x82);
-        peripherals.tft_write(0x27);
+        peripherals.tft_write(0x08 as u8);
+        peripherals.tft_write(0x82 as u8);
+        peripherals.tft_write(0x27 as u8);
 
         peripherals.tft_write(TftCommand::Gamma3En);
-        peripherals.tft_write(0x00);
+        peripherals.tft_write(0x00 as u8);
 
         peripherals.tft_write(TftCommand::ColumnAddr);
-        peripherals.tft_write(0x00);
-        peripherals.tft_write(0x00);
-        peripherals.tft_write(0x00);
-        peripherals.tft_write(0xEF);
+        peripherals.tft_write(0x00 as u8);
+        peripherals.tft_write(0x00 as u8);
+        peripherals.tft_write(0x00 as u8);
+        peripherals.tft_write(0xEF as u8);
 
         peripherals.tft_write(TftCommand::PageAddr);
-        peripherals.tft_write(0x00);
-        peripherals.tft_write(0x00);
-        peripherals.tft_write(0x01);
-        peripherals.tft_write(0x3F);
+        peripherals.tft_write(0x00 as u8);
+        peripherals.tft_write(0x00 as u8);
+        peripherals.tft_write(0x01 as u8);
+        peripherals.tft_write(0x3F as u8);
 
         peripherals.tft_write(TftCommand::Gamma);
-        peripherals.tft_write(0x01);
+        peripherals.tft_write(0x01 as u8);
 
         peripherals.tft_write(TftCommand::Pgamma);
-        peripherals.tft_write(0x0F);
-        peripherals.tft_write(0x31);
-        peripherals.tft_write(0x2B);
-        peripherals.tft_write(0x0C);
-        peripherals.tft_write(0x0E);
-        peripherals.tft_write(0x08);
-        peripherals.tft_write(0x4E);
-        peripherals.tft_write(0xF1);
-        peripherals.tft_write(0x37);
-        peripherals.tft_write(0x07);
-        peripherals.tft_write(0x10);
-        peripherals.tft_write(0x03);
-        peripherals.tft_write(0x0E);
-        peripherals.tft_write(0x09);
-        peripherals.tft_write(0x00);
+        peripherals.tft_write(0x0F as u8);
+        peripherals.tft_write(0x31 as u8);
+        peripherals.tft_write(0x2B as u8);
+        peripherals.tft_write(0x0C as u8);
+        peripherals.tft_write(0x0E as u8);
+        peripherals.tft_write(0x08 as u8);
+        peripherals.tft_write(0x4E as u8);
+        peripherals.tft_write(0xF1 as u8);
+        peripherals.tft_write(0x37 as u8);
+        peripherals.tft_write(0x07 as u8);
+        peripherals.tft_write(0x10 as u8);
+        peripherals.tft_write(0x03 as u8);
+        peripherals.tft_write(0x0E as u8);
+        peripherals.tft_write(0x09 as u8);
+        peripherals.tft_write(0x00 as u8);
 
         peripherals.tft_write(TftCommand::Ngamma);
-        peripherals.tft_write(0x00);
-        peripherals.tft_write(0x0E);
-        peripherals.tft_write(0x14);
-        peripherals.tft_write(0x03);
-        peripherals.tft_write(0x11);
-        peripherals.tft_write(0x07);
-        peripherals.tft_write(0x31);
-        peripherals.tft_write(0xC1);
-        peripherals.tft_write(0x48);
-        peripherals.tft_write(0x08);
-        peripherals.tft_write(0x0F);
-        peripherals.tft_write(0x0C);
-        peripherals.tft_write(0x31);
-        peripherals.tft_write(0x36);
-        peripherals.tft_write(0x0F);
+        peripherals.tft_write(0x00 as u8);
+        peripherals.tft_write(0x0E as u8);
+        peripherals.tft_write(0x14 as u8);
+        peripherals.tft_write(0x03 as u8);
+        peripherals.tft_write(0x11 as u8);
+        peripherals.tft_write(0x07 as u8);
+        peripherals.tft_write(0x31 as u8);
+        peripherals.tft_write(0xC1 as u8);
+        peripherals.tft_write(0x48 as u8);
+        peripherals.tft_write(0x08 as u8);
+        peripherals.tft_write(0x0F as u8);
+        peripherals.tft_write(0x0C as u8);
+        peripherals.tft_write(0x31 as u8);
+        peripherals.tft_write(0x36 as u8);
+        peripherals.tft_write(0x0F as u8);
 
         peripherals.tft_write(TftCommand::SleepOut);
         peripherals.TIM5.delay_ms(10);
