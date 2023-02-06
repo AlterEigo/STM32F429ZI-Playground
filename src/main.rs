@@ -559,6 +559,7 @@ fn entrypoint() -> ! {
         // );
 
         peripherals.GPIOD.odr.modify(|_, w| w
+            .odr7().set_bit()
             .odr5().set_bit()
             .odr4().set_bit()
         );
