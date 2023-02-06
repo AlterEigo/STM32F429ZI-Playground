@@ -71,10 +71,16 @@ impl SpiHl for stm32f429_rt::SPI5 {
         self.dr.write(|w| w.dr().variant(value as u16));
 
         // Wait until transmitted data is sampled
-        while ! self.sr.read().rxne().bit_is_set() { /* do nothing */ }
+        while ! self.sr.read().rxne().bit_is_set() {}
 
         // Discarding received data and causing RXNE to clear
         let _: u16 = self.dr.read().dr().bits();
+
+        // Assert the TXE flag is set after writing
+        while ! self.sr.read().txe().bit_is_set() { /* do nothing */ }
+
+        // Assert the BSY flag is set after writing
+        // while ! self.sr.read().bsy().bit_is_clear() { [> do nothing <] }
     }
 }
 
