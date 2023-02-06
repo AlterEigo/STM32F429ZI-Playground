@@ -16,6 +16,9 @@ use core::ops::{Deref, DerefMut};
 use core::panic::PanicInfo;
 use core::ptr;
 
+const SCREEN_X_MAX: u16 = 240;
+const SCREEN_Y_MAX: u16 = 320;
+
 struct Peripherals {
     native: NativePeripherals,
     screen_max_x: Cell<u16>,
@@ -26,8 +29,8 @@ impl Peripherals {
     unsafe fn steal() -> Self {
         Self {
             native: NativePeripherals::steal(),
-            screen_max_x: Cell::new(240),
-            screen_max_y: Cell::new(320)
+            screen_max_x: Cell::new(SCREEN_X_MAX),
+            screen_max_y: Cell::new(SCREEN_Y_MAX)
         }
     }
     
