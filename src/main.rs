@@ -120,6 +120,18 @@ impl Peripherals {
         }
     }
 
+    fn tft_set_display_window(
+        &self, x_pos1: u16, y_pos1: u16, x_pos2: u16, y_pos2: u16
+    ) {
+        self.tft_write(TftCommand::ColumnAddr);
+        self.tft_write(x_pos1);
+        self.tft_write(x_pos2);
+        self.tft_write(TftCommand::PageAddr);
+        self.tft_write(y_pos1);
+        self.tft_write(y_pos2);
+        self.tft_write(TftCommand::Gram);
+    }
+
 }
 
 impl Deref for Peripherals {
