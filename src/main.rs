@@ -425,6 +425,13 @@ fn configure_gpiof(gpiof: &GPIOF) {
         w.afrl7().bits(0b0101) // AF5 = SPI1/2/3/4/5
     });
 
+    // Enabling alternate function mode for 7th, 8th and 9th pins 
+    gpiof.moder.write(|w| unsafe {
+        w.moder7().bits(0x10);
+        w.moder8().bits(0x10);
+        w.moder9().bits(0x10)
+    });
+
     gpiof.afrh.write(|w| unsafe {
         w.afrh8().bits(0b0101);
         w.afrh9().bits(0b0101)
@@ -441,13 +448,6 @@ fn configure_gpiof(gpiof: &GPIOF) {
         w.ospeedr7().bits(0b11);
         w.ospeedr8().bits(0b11);
         w.ospeedr9().bits(0b11)
-    });
-
-    // Enabling alternate function mode for 7th, 8th and 9th pins 
-    gpiof.moder.write(|w| unsafe {
-        w.moder7().bits(0x10);
-        w.moder8().bits(0x10);
-        w.moder9().bits(0x10)
     });
 }
 
