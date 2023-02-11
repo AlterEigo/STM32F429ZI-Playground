@@ -508,8 +508,6 @@ fn configure_rcc(p: &Peripherals) {
 
 fn configure_spi5(peripherals: &Peripherals) {
     peripherals.SPI5.cr1.modify(|_, w| w
-        // Enabling SPI
-        .spe().set_bit()
         // Fpclk/4
         .br().variant(0b001)
         // As master
@@ -534,6 +532,8 @@ fn configure_spi5(peripherals: &Peripherals) {
         // TI (8080) mode
         // .frf().set_bit()
     );
+
+    peripherals.SPI5.cr1.modify(|_, w| w.spe().set_bit());
 
     peripherals.GPIOD.odr.modify(|_, w| w
         .odr7().set_bit()
