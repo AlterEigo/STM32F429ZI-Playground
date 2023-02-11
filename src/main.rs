@@ -528,12 +528,12 @@ fn configure_spi5(peripherals: &Peripherals) {
         .ssi().set_bit()
     );
 
-    // peripherals.SPI5.cr2.write(|w| w
-        // // SS disable
-        // .ssoe().clear_bit()
-        // // TI (8080) mode
+    peripherals.SPI5.cr2.modify(|_, w| w
+        // SS disable
+        .ssoe().clear_bit()
+        // TI (8080) mode
         // .frf().set_bit()
-    // );
+    );
 
     peripherals.GPIOD.odr.modify(|_, w| w
         .odr7().set_bit()
