@@ -427,9 +427,9 @@ fn configure_gpiof(gpiof: &GPIOF) {
 
     // Enabling alternate function mode for 7th, 8th and 9th pins 
     gpiof.moder.write(|w| unsafe {
-        w.moder7().bits(0x10);
-        w.moder8().bits(0x10);
-        w.moder9().bits(0x10)
+        w.moder7().bits(0b10);
+        w.moder8().bits(0b10);
+        w.moder9().bits(0b10)
     });
 
     gpiof.afrh.write(|w| unsafe {
