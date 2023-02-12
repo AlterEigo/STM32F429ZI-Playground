@@ -304,7 +304,7 @@ impl SpiHl for stm32f429_rt::SPI5 {
         while ! self.sr.read().rxne().bit_is_set() {}
 
         // Discarding received data and causing RXNE to clear
-        let _: u16 = self.dr.read().dr().bits();
+        self.dr.read().dr().bits();
 
         // Assert the TXE flag is set after writing
         while ! self.sr.read().txe().bit_is_set() { /* do nothing */ }
