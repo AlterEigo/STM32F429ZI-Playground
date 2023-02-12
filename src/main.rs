@@ -686,7 +686,7 @@ fn entrypoint() -> ! {
         peripherals.TIM5.delay_ms(600);
         peripherals.tft_fill(0x07E0);
         peripherals.TIM5.delay_ms(600);
-        peripherals.tft_fill(0xF800);
+        peripherals.tft_fill(0x001F);
         peripherals.TIM5.delay_ms(600);
         peripherals.tft_fill(0x0000);
     }
