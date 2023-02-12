@@ -352,7 +352,7 @@ impl MsDelay for stm32f429_rt::TIM5
                 continue;
             }
             self.sr.modify(|_, w| w.uif().clear_bit());
-            now += 16_000;
+            now += 16_000u32 + self.cnt.read().bits();
             if now >= until {
                 break;
             }
