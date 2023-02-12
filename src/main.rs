@@ -340,20 +340,22 @@ impl MsDelay for stm32f429_rt::TIM5
             .cnt_h().variant(0)
         );
 
+        let mut now: u32 = self.cnt.read().bits();
+        let until: u32 = now + (16_000 * dt);
+
         // Assuming running in 16MHz mode with 1ms step
         assert_eq!(self.arr.read().bits(), (16_000_000 / 1000) - 1);
         // let mut dt: u32 = (16_000_000 / 1000 * dt) - 1;
 
-        let mut dt = Some(dt);
         loop {
-            if dt.is_none() {
-                break;
-            }
             if self.sr.read().uif().bit_is_clear() {
                 continue;
             }
-            self.sr.write(|w| w.uif().clear_bit());
-            dt = dt.unwrap().checked_sub(1);
+            self.sr.modify(|_, w| w.uif().clear_bit());
+            now += 16_000;
+            if now >= until {
+                break;
+            }
         }
     }
 }
