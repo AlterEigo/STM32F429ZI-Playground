@@ -495,6 +495,7 @@ fn configure_rcc(p: &Peripherals) {
         w.gpioden().set_bit();
         w.gpiofen().set_bit()
     });
+    p.TIM5.delay_ms(10);
 
     configure_gpioc(&p.GPIOC);
     configure_gpiod(&p.GPIOD);
