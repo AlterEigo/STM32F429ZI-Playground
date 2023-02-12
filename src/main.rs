@@ -57,13 +57,13 @@ impl Peripherals {
             },
             TftMessage::HWord(hword) => {
                 self.SPI5.write_byte( (hword >> 8) as u8 );
-                self.SPI5.write_byte( (hword & 0x0011) as u8 );
+                self.SPI5.write_byte( (hword & 0x00FF) as u8 );
             },
             TftMessage::Word(word) => {
-                let hhb = (word & 0x1100_0000).shr(24) as u8;
-                let hlb = (word & 0x0011_0000).shr(16) as u8;
-                let lhb = (word & 0x0000_1100).shr(8) as u8;
-                let llb = (word & 0x0000_0011) as u8;
+                let hhb = (word & 0xFF00_0000).shr(24) as u8;
+                let hlb = (word & 0x00FF_0000).shr(16) as u8;
+                let lhb = (word & 0x0000_FF00).shr(8) as u8;
+                let llb = (word & 0x0000_00FF) as u8;
 
                 self.SPI5.write_byte(hhb);
                 self.SPI5.write_byte(hlb);
